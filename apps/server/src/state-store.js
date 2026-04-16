@@ -146,6 +146,16 @@ function createInitialState() {
   };
 }
 
+function createDisconnectedRuntimeState() {
+  const initial = createInitialState();
+
+  return {
+    imu: initial.imu,
+    gaitTelemetry: initial.gait.telemetry,
+    scriptRunner: initial.scriptRunner
+  };
+}
+
 export class StateStore extends EventEmitter {
   constructor() {
     super();
@@ -238,6 +248,14 @@ export class StateStore extends EventEmitter {
       ...this.state.servoAngles,
       [id]: angle
     };
+    this.emit('status', this.snapshot());
+  }
+
+  resetRobotRuntimeState() {
+    const disconnected = createDisconnectedRuntimeState();
+    this.state.imu = disconnected.imu;
+    this.state.gait.telemetry = disconnected.gaitTelemetry;
+    this.state.scriptRunner = disconnected.scriptRunner;
     this.emit('status', this.snapshot());
   }
 

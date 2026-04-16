@@ -124,6 +124,7 @@ export class RobotManager extends EventEmitter {
         lastSeenAt: null,
         otaInProgress: false
       });
+      this.store.resetRobotRuntimeState();
       this.store.addLog('warn', '机器人连接已断开');
       this.emit('disconnected', { ip: this.robotIp });
     });
@@ -160,6 +161,7 @@ export class RobotManager extends EventEmitter {
       lastSeenAt: null,
       otaInProgress: false
     });
+    this.store.resetRobotRuntimeState();
     this.emit('disconnected', { ip: this.robotIp });
   }
 
