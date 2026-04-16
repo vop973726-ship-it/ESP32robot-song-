@@ -1,0 +1,17 @@
+{
+  "name": "@esp32-robot/server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "lint": "node --check src/camera-manager.js && node --check src/index.js && node --check src/flashers.js && node --check src/gait-config.js && node --check src/gait-optimizer.js && node --check src/llm-client.js && node --check src/robot-manager.js && node --check src/script-runner.js && node --check src/state-store.js && node --check src/serial-scanner.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "ws": "^8.18.0"
+  }
+}

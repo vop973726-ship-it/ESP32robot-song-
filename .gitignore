@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+coverage
+.env
+.env.local
+apps/server/.env
+apps/server/.env.local
+*.log
+apps/server/uploads/*
+!apps/server/uploads/.gitkeep
+.pio
+.platformio
+firmware/**/include/secrets.h
