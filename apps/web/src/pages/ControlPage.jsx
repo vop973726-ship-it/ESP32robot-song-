@@ -39,7 +39,7 @@ export default function ControlPage({
       <article className="panel">
         <div className="panel-head">
           <h2>实时控制区</h2>
-          <span className="muted">高层动作和移动命令，企鹅步测试会直接启动无踝步态</span>
+          <span className="muted">先聚焦前进方向的企鹅步测试，其他方向暂时留空</span>
         </div>
 
         <div className="status-grid control-status-grid">
@@ -68,7 +68,7 @@ export default function ControlPage({
         <div className="shortcut-strip">
           <span className="shortcut-pill">Space 急停</span>
           <span className="shortcut-pill">Esc 停止移动</span>
-          <span className="shortcut-pill">方向键 控制移动</span>
+          <span className="shortcut-pill">↑ 前进测试</span>
         </div>
 
         {showDriverWarning ? (

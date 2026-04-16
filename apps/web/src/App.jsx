@@ -319,10 +319,7 @@ export default function App() {
 
   useEffect(() => {
     const movePayloadByKey = {
-      ArrowUp: { type: 'move', direction: 'forward', speed: 40 },
-      ArrowDown: { type: 'move', direction: 'backward', speed: 30 },
-      ArrowLeft: { type: 'move', direction: 'left', speed: 25 },
-      ArrowRight: { type: 'move', direction: 'right', speed: 25 }
+      ArrowUp: { type: 'move', direction: 'forward', speed: 40 }
     };
 
     function handleKeyDown(event) {

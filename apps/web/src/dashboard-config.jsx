@@ -223,9 +223,6 @@ export const actionButtons = [
 
 export const moveButtons = [
   { label: '前进', payload: { type: 'move', direction: 'forward', speed: 40 } },
-  { label: '后退', payload: { type: 'move', direction: 'backward', speed: 30 } },
-  { label: '左转', payload: { type: 'move', direction: 'left', speed: 25 } },
-  { label: '右转', payload: { type: 'move', direction: 'right', speed: 25 } },
   { label: '停止', payload: { type: 'move', direction: 'stop', speed: 0 } }
 ];
 
