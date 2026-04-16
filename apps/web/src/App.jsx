@@ -858,8 +858,15 @@ export default function App() {
   const gaitTelemetry = dashboard.gait?.telemetry || defaultState.gait.telemetry;
   const gaitOptimizer = dashboard.gait?.optimizer || defaultState.gait.optimizer;
   const scriptRunner = dashboard.scriptRunner || defaultState.scriptRunner;
+  const robotConnected = Boolean(dashboard.robot.connected);
   const build = dashboard.runtime.build;
   const driverReady = Boolean(build?.servoDriverReady);
+  const driverStatusLabel = !robotConnected
+    ? '未连接'
+    : driverReady
+      ? 'PCA9685 正常'
+      : 'PCA9685 未识别';
+  const driverStatusAccent = !robotConnected ? 'warn' : driverReady ? 'good' : 'warn';
   const batteryLabel =
     typeof dashboard.robot.battery === 'number' ? `${dashboard.robot.battery} V` : '--';
   const flashTargetLabel = flashTarget === 'camera' ? '相机模块' : '机器人主控';
@@ -941,8 +948,8 @@ export default function App() {
           />
           <StatusCard
             label="舵机驱动"
-            value={driverReady ? 'PCA9685 正常' : 'PCA9685 未识别'}
-            accent={driverReady ? 'good' : 'warn'}
+            value={driverStatusLabel}
+            accent={driverStatusAccent}
           />
           <StatusCard
             label="控制延迟"

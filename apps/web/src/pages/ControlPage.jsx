@@ -22,8 +22,15 @@ export default function ControlPage({
   setServoLiveMode
 }) {
   const build = dashboard.runtime.build;
+  const robotConnected = Boolean(dashboard.robot.connected);
   const driverReady = Boolean(build?.servoDriverReady);
-  const showDriverWarning = Boolean(dashboard.robot.connected && build && !driverReady);
+  const driverStatusLabel = !robotConnected
+    ? '未连接'
+    : driverReady
+      ? 'PCA9685 正常'
+      : 'PCA9685 未识别';
+  const driverStatusAccent = !robotConnected ? 'warn' : driverReady ? 'good' : 'warn';
+  const showDriverWarning = Boolean(robotConnected && build && !driverReady);
   const batteryLabel =
     typeof dashboard.robot.battery === 'number' ? `${dashboard.robot.battery} V` : '--';
 
@@ -38,13 +45,13 @@ export default function ControlPage({
         <div className="status-grid control-status-grid">
           <StatusCard
             label="机器人连接"
-            value={dashboard.robot.connected ? '在线' : '离线'}
-            accent={dashboard.robot.connected ? 'good' : 'warn'}
+            value={robotConnected ? '在线' : '离线'}
+            accent={robotConnected ? 'good' : 'warn'}
           />
           <StatusCard
             label="舵机驱动"
-            value={driverReady ? 'PCA9685 正常' : 'PCA9685 未识别'}
-            accent={driverReady ? 'good' : 'warn'}
+            value={driverStatusLabel}
+            accent={driverStatusAccent}
           />
           <StatusCard label="电池电压" value={batteryLabel} />
           <StatusCard
