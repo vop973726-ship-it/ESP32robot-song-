@@ -5,7 +5,7 @@
 constexpr uint8_t SERVO_COUNT = 7;
 // 顺序对应 Web 中的舵机 ID:
 // 1 左膝, 2 右膝, 3 左胯zy, 4 右胯zy, 5 左胯qh, 6 右胯qh, 7 脖子
-constexpr uint8_t PCA9685_CHANNELS[SERVO_COUNT] = {15, 0, 12, 3, 9, 6, 14};
+constexpr uint8_t PCA9685_CHANNELS[SERVO_COUNT] = {4, 11, 7, 8, 1, 14, 15};
 // 镜像结构下，右侧 3 个关节使用反向角度映射。
 constexpr bool SERVO_INVERTED[SERVO_COUNT] = {false, true, false, true, true, false, false};
 constexpr uint8_t PCA9685_I2C_ADDRESS = 0x40;
