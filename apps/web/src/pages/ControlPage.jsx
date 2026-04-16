@@ -17,7 +17,9 @@ export default function ControlPage({
   trimRange,
   servoTrimDrafts,
   updateServoTrim,
-  commitServoTrim
+  commitServoTrim,
+  servoLiveMode,
+  setServoLiveMode
 }) {
   const build = dashboard.runtime.build;
   const driverReady = Boolean(build?.servoDriverReady);
@@ -104,8 +106,24 @@ export default function ControlPage({
         <div className="panel-head">
           <h2>舵机调节区</h2>
           <span className="muted">
-            {showDriverWarning ? '驱动异常时已禁用舵机调节' : '松开滑块后发送角度'}
+            {showDriverWarning
+              ? '驱动异常时已禁用舵机调节'
+              : servoLiveMode
+                ? '拖动滑块时会实时发送角度'
+                : '松开滑块后发送角度'}
           </span>
+        </div>
+
+        <div className="live-servo-toolbar">
+          <button
+            type="button"
+            className={servoLiveMode ? 'selected' : 'ghost'}
+            onClick={() => setServoLiveMode((current) => !current)}
+            disabled={showDriverWarning}
+          >
+            实时模式：{servoLiveMode ? '开' : '关'}
+          </button>
+          <span className="muted">开启后会按节流连续发送，方便实时观察舵机姿态。</span>
         </div>
 
         {servoControls.map(({ id, label, channel }) => (

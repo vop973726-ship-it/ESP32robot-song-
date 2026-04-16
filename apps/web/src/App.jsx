@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   StatusCard,
   appendCacheBuster,
@@ -8,6 +8,7 @@ import {
   defaultScriptPrompt,
   defaultServoTrimDrafts,
   defaultState,
+  formatValue,
   getPageFromHash,
   normalizePageId,
   pageTabs,
@@ -20,6 +21,7 @@ import OverviewPage from './pages/OverviewPage.jsx';
 import SystemPage from './pages/SystemPage.jsx';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:3001';
+const LIVE_SERVO_INTERVAL_MS = 90;
 
 function buildWsUrl() {
   if (API_BASE.startsWith('https://')) {
@@ -175,7 +177,11 @@ export default function App() {
   });
   const [servoDrafts, setServoDrafts] = useState(defaultState.servoAngles);
   const [servoTrimDrafts, setServoTrimDrafts] = useState(defaultServoTrimDrafts);
+  const [servoLiveMode, setServoLiveMode] = useState(false);
   const [toast, setToast] = useState('');
+  const liveServoTimersRef = useRef({});
+  const liveServoPendingRef = useRef({});
+  const liveServoLastSentAtRef = useRef({});
 
   useEffect(() => {
     function handleHashChange() {
@@ -290,6 +296,26 @@ export default function App() {
       setUsbPort(dashboard.serial.recommendedPort || ports[0].path);
     }
   }, [dashboard.serial, usbPort]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(liveServoTimersRef.current).forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (servoLiveMode) {
+      return;
+    }
+
+    Object.values(liveServoTimersRef.current).forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    liveServoTimersRef.current = {};
+    liveServoPendingRef.current = {};
+  }, [servoLiveMode]);
 
   useEffect(() => {
     const movePayloadByKey = {
@@ -626,18 +652,68 @@ export default function App() {
   }
 
   function updateServo(id, angle) {
+    const nextAngle = Number(angle);
+
     setServoDrafts((current) => ({
       ...current,
-      [id]: Number(angle)
+      [id]: nextAngle
     }));
+
+    if (servoLiveMode) {
+      scheduleLiveServo(id, nextAngle);
+    }
   }
 
   function commitServo(id, angle = servoDrafts[id]) {
+    flushLiveServo(id, Number(angle));
+  }
+
+  function sendServoCommand(id, angle) {
     handleCommand({
       type: 'servo',
       id,
       angle: Number(angle)
     });
+  }
+
+  function scheduleLiveServo(id, angle) {
+    liveServoPendingRef.current[id] = Number(angle);
+
+    const existingTimer = liveServoTimersRef.current[id];
+    const elapsed = Date.now() - (liveServoLastSentAtRef.current[id] || 0);
+    const remaining = Math.max(0, LIVE_SERVO_INTERVAL_MS - elapsed);
+
+    if (!existingTimer && remaining === 0) {
+      liveServoLastSentAtRef.current[id] = Date.now();
+      const nextAngle = liveServoPendingRef.current[id];
+      delete liveServoPendingRef.current[id];
+      sendServoCommand(id, nextAngle);
+      return;
+    }
+
+    if (existingTimer) {
+      return;
+    }
+
+    liveServoTimersRef.current[id] = window.setTimeout(() => {
+      delete liveServoTimersRef.current[id];
+      const nextAngle = liveServoPendingRef.current[id];
+      delete liveServoPendingRef.current[id];
+      liveServoLastSentAtRef.current[id] = Date.now();
+      sendServoCommand(id, nextAngle);
+    }, remaining || LIVE_SERVO_INTERVAL_MS);
+  }
+
+  function flushLiveServo(id, angle) {
+    const existingTimer = liveServoTimersRef.current[id];
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+      delete liveServoTimersRef.current[id];
+    }
+
+    delete liveServoPendingRef.current[id];
+    liveServoLastSentAtRef.current[id] = Date.now();
+    sendServoCommand(id, Number(angle));
   }
 
   function updateServoTrim(id, offset) {
@@ -746,6 +822,8 @@ export default function App() {
             servoTrimDrafts={servoTrimDrafts}
             updateServoTrim={updateServoTrim}
             commitServoTrim={commitServoTrim}
+            servoLiveMode={servoLiveMode}
+            setServoLiveMode={setServoLiveMode}
           />
         );
       case 'optimize':
@@ -780,6 +858,10 @@ export default function App() {
   const gaitTelemetry = dashboard.gait?.telemetry || defaultState.gait.telemetry;
   const gaitOptimizer = dashboard.gait?.optimizer || defaultState.gait.optimizer;
   const scriptRunner = dashboard.scriptRunner || defaultState.scriptRunner;
+  const build = dashboard.runtime.build;
+  const driverReady = Boolean(build?.servoDriverReady);
+  const batteryLabel =
+    typeof dashboard.robot.battery === 'number' ? `${dashboard.robot.battery} V` : '--';
   const flashTargetLabel = flashTarget === 'camera' ? '相机模块' : '机器人主控';
   const flashTargetIp = flashTarget === 'camera' ? cameraForm.ip : ip;
   const cameraStreamProxyUrl = camera.baseUrl ? buildApiUrl('/api/camera/stream') : '';
@@ -847,12 +929,31 @@ export default function App() {
           </div>
         </section>
 
-        <section className="page-summary-grid">
+        <section className="page-summary-grid global-status-panel">
           <StatusCard
             label="机器人"
             value={dashboard.robot.connected ? '已连接' : '未连接'}
             accent={dashboard.robot.connected ? 'good' : 'warn'}
           />
+          <StatusCard
+            label="机器人 IP"
+            value={dashboard.robot.ip || dashboard.runtime.network?.ip || '--'}
+          />
+          <StatusCard
+            label="舵机驱动"
+            value={driverReady ? 'PCA9685 正常' : 'PCA9685 未识别'}
+            accent={driverReady ? 'good' : 'warn'}
+          />
+          <StatusCard
+            label="控制延迟"
+            value={formatValue(dashboard.robot.latencyMs, ' ms')}
+            accent={
+              typeof dashboard.robot.latencyMs === 'number' && dashboard.robot.latencyMs <= 120
+                ? 'good'
+                : undefined
+            }
+          />
+          <StatusCard label="电池电压" value={batteryLabel} />
           <StatusCard
             label="相机"
             value={camera.connected ? '在线' : '未连接'}
@@ -864,14 +965,14 @@ export default function App() {
             accent={imu.available ? 'good' : 'warn'}
           />
           <StatusCard
-            label="优化器"
-            value={gaitOptimizer.running ? '运行中' : gaitOptimizer.status || '空闲'}
-            accent={gaitOptimizer.running ? 'good' : 'warn'}
-          />
-          <StatusCard
             label="脚本"
             value={scriptRunner.running ? '运行中' : scriptRunner.statusMessage || '空闲'}
             accent={scriptRunner.running ? 'good' : scriptRunner.lastError ? 'warn' : undefined}
+          />
+          <StatusCard
+            label="优化器"
+            value={gaitOptimizer.running ? '运行中' : gaitOptimizer.status || '空闲'}
+            accent={gaitOptimizer.running ? 'good' : 'warn'}
           />
         </section>
 
