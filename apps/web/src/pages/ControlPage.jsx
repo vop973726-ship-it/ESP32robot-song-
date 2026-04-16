@@ -11,6 +11,7 @@ export default function ControlPage({
   dashboard,
   handleCommand,
   centerAllServos,
+  factoryCenterAllServos,
   servoDrafts,
   updateServo,
   commitServo,
@@ -167,11 +168,19 @@ export default function ControlPage({
               >
                 一键归中
               </button>
+              <button
+                className="ghost"
+                type="button"
+                onClick={factoryCenterAllServos}
+                disabled={showDriverWarning}
+              >
+                一键归零
+              </button>
             </div>
           </div>
 
           <p className="panel-note">
-            当前零位基准已经保存到主控板。之后只需要使用“一键归中”把全部舵机拉回这套基准。如果某个舵机的机械中位仍然偏了，再在这里微调偏移。校准会直接保存到主控板。
+            “一键归中”会回到当前保存的零位基准；“一键归零”会忽略零位偏移，直接把全部舵机打到原厂物理 90 度。如果某个舵机的机械中位仍然偏了，再在这里微调偏移。校准会直接保存到主控板。
           </p>
 
           {servoControls.map(({ id, label }) => (

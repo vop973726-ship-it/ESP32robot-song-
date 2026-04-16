@@ -476,6 +476,25 @@ export default function App() {
     }
   }
 
+  async function factoryCenterAllServos() {
+    setServoDrafts((current) =>
+      Object.fromEntries(Object.keys(current).map((key) => [key, 90]))
+    );
+
+    try {
+      await request('/api/control', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'action',
+          name: 'factory_center'
+        })
+      });
+      setToast('已执行一键归零');
+    } catch (error) {
+      setToast(error.message);
+    }
+  }
+
   async function handleUpload() {
     if (!selectedFile) {
       setToast('请先选择 .bin 固件');
@@ -812,6 +831,7 @@ export default function App() {
             dashboard={dashboard}
             handleCommand={handleCommand}
             centerAllServos={centerAllServos}
+            factoryCenterAllServos={factoryCenterAllServos}
             servoDrafts={servoDrafts}
             updateServo={updateServo}
             commitServo={commitServo}

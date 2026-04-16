@@ -132,7 +132,9 @@ RobotState robotState;
 GaitState gaitState;
 
 void applyServoAngle(uint8_t servoId, int angle);
+void applyServoPhysicalAngle(uint8_t servoId, int physicalAngle, bool updateLogicalState = false);
 void centerPose();
+void centerPhysicalPose();
 void stopAllMotion();
 
 void appendStringArray(JsonArray target, const char* const items[], size_t count) {
@@ -817,9 +819,44 @@ void applyServoAngle(uint8_t servoId, int angle) {
   robotState.servoAngles[servoId] = constrained;
 }
 
+void applyServoPhysicalAngle(uint8_t servoId, int physicalAngle, bool updateLogicalState) {
+  if (servoId >= SERVO_COUNT) {
+    return;
+  }
+
+  if (!robotState.servoDriverReady) {
+    robotState.servoWriteFailures++;
+    robotState.lastDriverError = "PCA9685 not ready";
+    return;
+  }
+
+  const int constrained = constrain(physicalAngle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
+  const uint16_t pulseUs = angleToPulseUs(constrained);
+  const uint16_t ticks = pulseUsToTicks(pulseUs);
+
+  if (!writePca9685Pwm(PCA9685_CHANNELS[servoId], 0, ticks)) {
+    robotState.servoWriteFailures++;
+    robotState.servoDriverReady = false;
+    robotState.lastDriverError = "PCA9685 write failed";
+    Serial.printf("PCA9685 write failed on channel %u\n", PCA9685_CHANNELS[servoId]);
+    return;
+  }
+
+  robotState.lastDriverError = "";
+  if (updateLogicalState) {
+    robotState.servoAngles[servoId] = constrained;
+  }
+}
+
 void centerPose() {
   for (uint8_t index = 0; index < SERVO_COUNT; index++) {
     applyServoAngle(index, SERVO_CENTER_ANGLE);
+  }
+}
+
+void centerPhysicalPose() {
+  for (uint8_t index = 0; index < SERVO_COUNT; index++) {
+    applyServoPhysicalAngle(index, SERVO_CENTER_ANGLE, true);
   }
 }
 
@@ -1103,6 +1140,12 @@ void runAction(const String& name) {
   if (name == "center") {
     centerPose();
     robotState.mode = "center";
+    return;
+  }
+
+  if (name == "factory_center") {
+    centerPhysicalPose();
+    robotState.mode = "factory_center";
     return;
   }
 
