@@ -23,11 +23,13 @@ export class RobotManager extends EventEmitter {
       statusPath: '/status',
       controlPath: '/control',
       pingIntervalMs: 5000,
+      maxHeartbeatFailures: 2,
       ...options
     };
     this.robotSocket = null;
     this.robotIp = '';
     this.heartbeat = null;
+    this.heartbeatFailures = 0;
   }
 
   async connect(ip) {
@@ -99,6 +101,7 @@ export class RobotManager extends EventEmitter {
         const payload = JSON.parse(rawText);
 
         if (payload.type === 'status') {
+          this.heartbeatFailures = 0;
           this.store.applyRobotStatus({
             ...payload,
             ip: this.robotIp
@@ -140,6 +143,7 @@ export class RobotManager extends EventEmitter {
 
   async disconnect({ silent = false } = {}) {
     this.stopHeartbeat();
+    this.heartbeatFailures = 0;
 
     if (this.robotSocket) {
       const socket = this.robotSocket;
@@ -216,6 +220,7 @@ export class RobotManager extends EventEmitter {
 
     const payload = await response.json();
     const latencyMs = Date.now() - startedAt;
+    this.heartbeatFailures = 0;
     this.store.applyRobotStatus({
       ...payload,
       latencyMs,
@@ -228,7 +233,12 @@ export class RobotManager extends EventEmitter {
     this.stopHeartbeat();
     this.heartbeat = setInterval(() => {
       this.fetchStatus().catch((error) => {
+        this.heartbeatFailures += 1;
         this.store.addLog('warn', `状态轮询失败：${error.message}`);
+        if (this.heartbeatFailures >= this.options.maxHeartbeatFailures) {
+          this.store.addLog('warn', '状态轮询连续失败，已将机器人标记为离线');
+          void this.disconnect({ silent: true });
+        }
       });
     }, this.options.pingIntervalMs);
   }
