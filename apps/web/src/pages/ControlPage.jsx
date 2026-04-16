@@ -1,11 +1,14 @@
 import {
+  StatusCard,
   actionButtons,
+  formatValue,
   formatSignedValue,
   moveButtons,
   servoControls
 } from '../dashboard-config.jsx';
 
 export default function ControlPage({
+  dashboard,
   handleCommand,
   centerAllServos,
   servoDrafts,
@@ -16,6 +19,12 @@ export default function ControlPage({
   updateServoTrim,
   commitServoTrim
 }) {
+  const build = dashboard.runtime.build;
+  const driverReady = Boolean(build?.servoDriverReady);
+  const showDriverWarning = Boolean(dashboard.robot.connected && build && !driverReady);
+  const batteryLabel =
+    typeof dashboard.robot.battery === 'number' ? `${dashboard.robot.battery} V` : '--';
+
   return (
     <section className="grid two-columns page-content">
       <article className="panel">
@@ -23,6 +32,42 @@ export default function ControlPage({
           <h2>实时控制区</h2>
           <span className="muted">高层动作和移动命令，企鹅步测试会直接启动无踝步态</span>
         </div>
+
+        <div className="status-grid control-status-grid">
+          <StatusCard
+            label="机器人连接"
+            value={dashboard.robot.connected ? '在线' : '离线'}
+            accent={dashboard.robot.connected ? 'good' : 'warn'}
+          />
+          <StatusCard
+            label="舵机驱动"
+            value={driverReady ? 'PCA9685 正常' : 'PCA9685 未识别'}
+            accent={driverReady ? 'good' : 'warn'}
+          />
+          <StatusCard label="电池电压" value={batteryLabel} />
+          <StatusCard
+            label="控制延迟"
+            value={formatValue(dashboard.robot.latencyMs, ' ms')}
+            accent={
+              typeof dashboard.robot.latencyMs === 'number' && dashboard.robot.latencyMs <= 120
+                ? 'good'
+                : undefined
+            }
+          />
+        </div>
+
+        <div className="shortcut-strip">
+          <span className="shortcut-pill">Space 急停</span>
+          <span className="shortcut-pill">Esc 停止移动</span>
+          <span className="shortcut-pill">方向键 控制移动</span>
+        </div>
+
+        {showDriverWarning ? (
+          <div className="control-alert error">
+            <strong>⚠️ 舵机驱动未就绪</strong>
+            <p>{build.lastDriverError || '请检查 I2C 接线、PCA9685 供电与设备地址。'}</p>
+          </div>
+        ) : null}
 
         <div className="control-block">
           <p className="block-title">动作</p>
@@ -58,11 +103,13 @@ export default function ControlPage({
       <article className="panel">
         <div className="panel-head">
           <h2>舵机调节区</h2>
-          <span className="muted">松开滑块后发送角度</span>
+          <span className="muted">
+            {showDriverWarning ? '驱动异常时已禁用舵机调节' : '松开滑块后发送角度'}
+          </span>
         </div>
 
         {servoControls.map(({ id, label, channel }) => (
-          <label className="servo-row" key={id}>
+          <label className={`servo-row ${showDriverWarning ? 'is-disabled' : ''}`} key={id}>
             <div className="servo-meta">
               <div className="servo-label-group">
                 <span>{label}</span>
@@ -75,6 +122,7 @@ export default function ControlPage({
               min="0"
               max="180"
               value={servoDrafts[id]}
+              disabled={showDriverWarning}
               onChange={(event) => updateServo(id, event.target.value)}
               onMouseUp={(event) => commitServo(id, event.currentTarget.value)}
               onTouchEnd={(event) => commitServo(id, event.currentTarget.value)}
@@ -86,7 +134,12 @@ export default function ControlPage({
           <div className="panel-head trim-head">
             <h2>零位校准</h2>
             <div className="button-grid">
-              <button className="ghost" type="button" onClick={centerAllServos}>
+              <button
+                className="ghost"
+                type="button"
+                onClick={centerAllServos}
+                disabled={showDriverWarning}
+              >
                 一键归中
               </button>
             </div>
@@ -97,7 +150,7 @@ export default function ControlPage({
           </p>
 
           {servoControls.map(({ id, label }) => (
-            <label className="trim-row" key={`trim-${id}`}>
+            <label className={`trim-row ${showDriverWarning ? 'is-disabled' : ''}`} key={`trim-${id}`}>
               <div className="trim-meta">
                 <span>{label}</span>
                 <strong>{formatSignedValue(servoTrimDrafts[id], '°')}</strong>
@@ -107,6 +160,7 @@ export default function ControlPage({
                 min={trimRange.min}
                 max={trimRange.max}
                 value={servoTrimDrafts[id]}
+                disabled={showDriverWarning}
                 onChange={(event) => updateServoTrim(id, event.target.value)}
                 onMouseUp={(event) => commitServoTrim(id, event.currentTarget.value)}
                 onTouchEnd={(event) => commitServoTrim(id, event.currentTarget.value)}

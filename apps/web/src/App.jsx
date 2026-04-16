@@ -59,6 +59,20 @@ function createChatMessage(role, content) {
   };
 }
 
+function isTypingTarget(target) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName;
+  return (
+    tagName === 'INPUT' ||
+    tagName === 'TEXTAREA' ||
+    tagName === 'SELECT' ||
+    target.isContentEditable
+  );
+}
+
 function normalizeDashboardState(payload) {
   const next = payload && typeof payload === 'object' ? payload : {};
 
@@ -276,6 +290,60 @@ export default function App() {
       setUsbPort(dashboard.serial.recommendedPort || ports[0].path);
     }
   }, [dashboard.serial, usbPort]);
+
+  useEffect(() => {
+    const movePayloadByKey = {
+      ArrowUp: { type: 'move', direction: 'forward', speed: 40 },
+      ArrowDown: { type: 'move', direction: 'backward', speed: 30 },
+      ArrowLeft: { type: 'move', direction: 'left', speed: 25 },
+      ArrowRight: { type: 'move', direction: 'right', speed: 25 }
+    };
+
+    function handleKeyDown(event) {
+      if (event.repeat || isTypingTarget(event.target)) {
+        return;
+      }
+
+      if (event.code === 'Space') {
+        event.preventDefault();
+        handleCommand({ type: 'emergency_stop' });
+        setToast('已触发键盘急停');
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleCommand({ type: 'move', direction: 'stop', speed: 0 });
+        setToast('已发送停止移动');
+        return;
+      }
+
+      const payload = movePayloadByKey[event.key];
+      if (!payload) {
+        return;
+      }
+
+      event.preventDefault();
+      handleCommand(payload);
+    }
+
+    function handleKeyUp(event) {
+      if (isTypingTarget(event.target) || !movePayloadByKey[event.key]) {
+        return;
+      }
+
+      event.preventDefault();
+      handleCommand({ type: 'move', direction: 'stop', speed: 0 });
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleCommand]);
 
   async function loadStatus() {
     const payload = await request('/api/status');
@@ -668,6 +736,7 @@ export default function App() {
       case 'control':
         return (
           <ControlPage
+            dashboard={dashboard}
             handleCommand={handleCommand}
             centerAllServos={centerAllServos}
             servoDrafts={servoDrafts}
