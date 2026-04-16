@@ -171,10 +171,10 @@ export const defaultState = {
 export const servoControls = [
   { id: 1, label: '左膝', channel: 4 },
   { id: 2, label: '右膝', channel: 11 },
-  { id: 3, label: '左胯zy', channel: 7 },
-  { id: 4, label: '右胯zy', channel: 8 },
-  { id: 5, label: '左胯qh', channel: 1 },
-  { id: 6, label: '右胯qh', channel: 14 },
+  { id: 3, label: '左胯zy', channel: 1 },
+  { id: 4, label: '右胯zy', channel: 14 },
+  { id: 5, label: '左胯qh', channel: 7 },
+  { id: 6, label: '右胯qh', channel: 8 },
   { id: 7, label: '脖子（未接）', channel: 15 }
 ];
 
