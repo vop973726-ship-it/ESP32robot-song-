@@ -39,14 +39,14 @@ constexpr uint8_t SERVO_NECK = 6;
 }
 
 struct GaitParams {
-  float leanAngleDeg = 11.0f;
-  float hipSwingDeg = 18.0f;
-  float kneeLiftDeg = 22.0f;
-  float stanceKneeDeg = 108.0f;
-  unsigned long doubleSupportMs = 160;
-  unsigned long swingPhaseMs = 320;
-  float torsoLeadDeg = 1.5f;
-  float neckTrimDeg = 2.0f;
+  float leanAngleDeg = 8.0f;
+  float hipSwingDeg = 12.0f;
+  float kneeLiftDeg = 14.0f;
+  float stanceKneeDeg = 104.0f;
+  unsigned long doubleSupportMs = 240;
+  unsigned long swingPhaseMs = 460;
+  float torsoLeadDeg = 1.0f;
+  float neckTrimDeg = 1.5f;
 };
 
 enum class GaitPhase : uint8_t {
@@ -1107,14 +1107,14 @@ void runAction(const String& name) {
 
 void runMove(const String& direction, int speed) {
   if (direction == "forward") {
-    gaitState.params.leanAngleDeg = clampFloat(9.0f + speed * 0.06f, 9.0f, 12.0f);
-    gaitState.params.hipSwingDeg = clampFloat(14.0f + speed * 0.10f, 14.0f, 18.0f);
-    gaitState.params.kneeLiftDeg = clampFloat(16.0f + speed * 0.08f, 16.0f, 22.0f);
-    gaitState.params.stanceKneeDeg = 108.0f;
-    gaitState.params.doubleSupportMs = 160;
-    gaitState.params.swingPhaseMs = 340;
-    gaitState.params.torsoLeadDeg = 1.5f;
-    gaitState.params.neckTrimDeg = 2.0f;
+    gaitState.params.leanAngleDeg = clampFloat(6.5f + speed * 0.035f, 6.5f, 8.5f);
+    gaitState.params.hipSwingDeg = clampFloat(10.0f + speed * 0.05f, 10.0f, 13.0f);
+    gaitState.params.kneeLiftDeg = clampFloat(12.0f + speed * 0.05f, 12.0f, 15.0f);
+    gaitState.params.stanceKneeDeg = 104.0f;
+    gaitState.params.doubleSupportMs = 240;
+    gaitState.params.swingPhaseMs = 480;
+    gaitState.params.torsoLeadDeg = 1.0f;
+    gaitState.params.neckTrimDeg = 1.5f;
     startPenguinGait(0, true);
     return;
   }
