@@ -200,14 +200,14 @@ export const actionButtons = [
       gaitName: 'penguin_walk',
       durationMs: 0,
       params: {
-        leanAngleDeg: 10,
-        hipSwingDeg: 16,
-        kneeLiftDeg: 18,
-        stanceKneeDeg: 106,
-        doubleSupportMs: 180,
-        swingPhaseMs: 360,
+        leanAngleDeg: 6,
+        hipSwingDeg: 9,
+        kneeLiftDeg: 10,
+        stanceKneeDeg: 102,
+        doubleSupportMs: 260,
+        swingPhaseMs: 520,
         torsoLeadDeg: 1,
-        neckTrimDeg: 2
+        neckTrimDeg: 1
       }
     }
   },

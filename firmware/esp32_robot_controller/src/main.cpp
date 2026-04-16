@@ -29,6 +29,8 @@ constexpr float MPU6050_ACCEL_SCALE = 16384.0f;
 constexpr float MPU6050_GYRO_SCALE = 131.0f;
 constexpr float K_RADIANS_TO_DEGREES = 57.2957795f;
 constexpr float K_DEGREES_TO_RADIANS = 0.0174532925f;
+constexpr float PENGUIN_SHIFT_LEAN_FACTOR = 0.45f;
+constexpr float PENGUIN_SWING_LEAN_FACTOR = 0.72f;
 constexpr uint8_t SERVO_LEFT_KNEE = 0;
 constexpr uint8_t SERVO_RIGHT_KNEE = 1;
 constexpr uint8_t SERVO_LEFT_HIP_ROLL = 2;
@@ -961,11 +963,11 @@ void startPenguinGait(unsigned long durationMs, bool manualControl, uint32_t tri
   gaitState.stabilityScore = 0.0f;
   setPenguinPose(
     0.0f,
-    gaitState.params.stanceKneeDeg - SERVO_CENTER_ANGLE,
-    gaitState.params.stanceKneeDeg - SERVO_CENTER_ANGLE,
-    gaitState.params.torsoLeadDeg,
-    gaitState.params.torsoLeadDeg,
-    gaitState.params.neckTrimDeg
+    0.0f,
+    0.0f,
+    0.0f,
+    0.0f,
+    0.0f
   );
   robotState.mode = manualControl ? "penguin_walk" : "gait_trial";
 }
@@ -1013,6 +1015,8 @@ void updatePenguinGait() {
     2.0f,
     30.0f
   );
+  const float shiftLean = gaitState.params.leanAngleDeg * PENGUIN_SHIFT_LEAN_FACTOR;
+  const float swingLean = gaitState.params.leanAngleDeg * PENGUIN_SWING_LEAN_FACTOR;
 
   float bodyLean = 0.0f;
   float leftKneeBend = stanceBend;
@@ -1022,10 +1026,10 @@ void updatePenguinGait() {
 
   switch (gaitState.phase) {
     case GaitPhase::ShiftLeft:
-      bodyLean = lerpFloat(0.0f, gaitState.params.leanAngleDeg, eased);
+      bodyLean = lerpFloat(0.0f, shiftLean, eased);
       break;
     case GaitPhase::SwingRight:
-      bodyLean = gaitState.params.leanAngleDeg;
+      bodyLean = swingLean;
       rightKneeBend = stanceBend + gaitState.params.kneeLiftDeg * wave;
       leftHipPitch = gaitState.params.torsoLeadDeg + lerpFloat(
         gaitState.params.hipSwingDeg * 0.18f,
@@ -1039,10 +1043,10 @@ void updatePenguinGait() {
       );
       break;
     case GaitPhase::ShiftRight:
-      bodyLean = lerpFloat(gaitState.params.leanAngleDeg, -gaitState.params.leanAngleDeg, eased);
+      bodyLean = lerpFloat(shiftLean, -shiftLean, eased);
       break;
     case GaitPhase::SwingLeft:
-      bodyLean = -gaitState.params.leanAngleDeg;
+      bodyLean = -swingLean;
       leftKneeBend = stanceBend + gaitState.params.kneeLiftDeg * wave;
       leftHipPitch = gaitState.params.torsoLeadDeg + lerpFloat(
         -gaitState.params.hipSwingDeg * 0.45f,
